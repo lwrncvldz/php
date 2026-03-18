@@ -1,13 +1,16 @@
 <?php
 require_once dirname(__FILE__) . '/../Models/User.php';
+require_once dirname(__FILE__) . '/../../config/Mailer.php';
 
 class UserController {
     private $db;
     private $userModel;
+    private $mailer;
 
     public function __construct($db) {
         $this->db = $db;
         $this->userModel = new User($db);
+        $this->mailer = new Mailer();
     }
 
     // Register
@@ -23,7 +26,29 @@ class UserController {
         }
 
         $result = $this->userModel->register();
-        return $this->response($result);
+
+        if (!$result['success']) {
+            return $this->response($result, 400);
+        }
+
+        $mailResult = $this->mailer->sendVerificationEmail(
+            $this->userModel->email,
+            $this->userModel->name,
+            $result['verification_token']
+        );
+
+        $response = [
+            'success' => true,
+            'message' => 'Account created. Please check your email and activate your account before logging in.',
+            'emailSent' => $mailResult['success']
+        ];
+
+        if (!$mailResult['success']) {
+            $response['message'] = 'Account created, but verification email could not be sent. Please configure mail and request a new activation link.';
+            $response['verificationLink'] = $mailResult['activation_link'];
+        }
+
+        return $this->response($response, 201);
     }
 
     // Login
@@ -34,6 +59,10 @@ class UserController {
         $this->userModel->password = $data['password'] ?? '';
 
         $result = $this->userModel->login();
+
+        if (isset($result['requires_verification']) && $result['requires_verification']) {
+            return $this->response($result, 403);
+        }
         
         if ($result['success']) {
             $_SESSION['user_id'] = $result['user']['id'];
@@ -45,6 +74,88 @@ class UserController {
         }
         
         return $this->response($result, 401);
+    }
+
+    public function verifyEmail() {
+        $token = $_GET['token'] ?? '';
+        $result = $this->userModel->verifyEmail($token);
+
+        if ($result['success']) {
+            return $this->response($result, 200);
+        }
+
+        return $this->response($result, 400);
+    }
+
+    public function resendVerification() {
+        $data = json_decode(file_get_contents("php://input"), true);
+        $email = trim($data['email'] ?? '');
+
+        if (empty($email)) {
+            return $this->response(['success' => false, 'message' => 'Email is required'], 400);
+        }
+
+        $result = $this->userModel->regenerateVerificationTokenByEmail($email);
+
+        if (!$result['success']) {
+            return $this->response($result, 400);
+        }
+
+        if (!empty($result['already_verified'])) {
+            return $this->response($result, 200);
+        }
+
+        if (!empty($result['verification_token'])) {
+            $mailResult = $this->mailer->sendVerificationEmail(
+                $result['email'],
+                $result['name'],
+                $result['verification_token']
+            );
+
+            if (!$mailResult['success']) {
+                return $this->response([
+                    'success' => false,
+                    'message' => 'Could not resend activation email. Please configure mail and try again.',
+                    'verificationLink' => $mailResult['activation_link']
+                ], 500);
+            }
+        }
+
+        return $this->response([
+            'success' => true,
+            'message' => 'If the account exists and is not yet verified, a new activation link has been sent.'
+        ], 200);
+    }
+
+    public function adminVerifyUser() {
+        $data = json_decode(file_get_contents("php://input"), true);
+        $email = trim($data['email'] ?? '');
+        $adminKey = trim($data['adminKey'] ?? '');
+        $expectedKey = getenv('ADMIN_VERIFY_KEY') ?: '';
+
+        if (empty($expectedKey)) {
+            return $this->response([
+                'success' => false,
+                'message' => 'ADMIN_VERIFY_KEY is not configured on server'
+            ], 500);
+        }
+
+        if (empty($email) || empty($adminKey)) {
+            return $this->response([
+                'success' => false,
+                'message' => 'Email and adminKey are required'
+            ], 400);
+        }
+
+        if (!hash_equals($expectedKey, $adminKey)) {
+            return $this->response([
+                'success' => false,
+                'message' => 'Invalid admin key'
+            ], 403);
+        }
+
+        $result = $this->userModel->markEmailVerifiedByEmail($email);
+        return $this->response($result, $result['success'] ? 200 : 404);
     }
 
     // Get current user

@@ -5,6 +5,7 @@ A modern web-based expense tracking application built with PHP, Vue.js, and MySQ
 ## Features
 
 ✅ **User Authentication** - Secure register/login with bcrypt password hashing  
+✅ **Email Verification** - Activation link sent by email before first login  
 ✅ **Dashboard** - View total expenses, forecasts, and spending by category  
 ✅ **Add Expenses** - Track expenses with category, amount, date, and description  
 ✅ **Recurring Expenses** - Automatic expense generation (daily, weekly, monthly, yearly)  
@@ -51,6 +52,28 @@ private $dbName = 'expense_tracker';
 private $dbUser = 'root';
 private $dbPassword = 'your_password';
 ```
+
+### 3.1 Configure free email sending (required for activation links)
+
+This project supports two free options in [config/Mailer.php](config/Mailer.php):
+
+1. **Resend API (recommended free tier)** via `RESEND_API_KEY`
+2. **PHP mail() SMTP** via local `php.ini` + `sendmail.ini`
+
+Set these environment variables in Apache/XAMPP or your shell:
+
+```bash
+APP_URL=http://localhost/php/public
+MAIL_FROM_ADDRESS=yourname@gmail.com
+MAIL_FROM_NAME="Expense Tracker"
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxx
+ADMIN_VERIFY_KEY=change-this-admin-secret
+```
+
+If `RESEND_API_KEY` is set, the app sends activation emails through Resend API.
+If not, it falls back to PHP `mail()`.
+
+For XAMPP on Windows fallback mode, configure free SMTP in `php.ini` and `sendmail.ini` (for example Gmail SMTP with an app password) so PHP `mail()` can send real emails.
 
 ### 4. Run with PHP Built-in Server
 
@@ -116,6 +139,21 @@ php/
 | POST | `/api.php/budgets` | Create budget |
 | PUT | `/api.php/budgets/[id]` | Update budget |
 | DELETE | `/api.php/budgets/[id]` | Delete budget |
+
+### Authentication
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api.php/auth/register` | Register user and send activation email |
+| GET | `/api.php/auth/verify?token=...` | Activate account via email token |
+| POST | `/api.php/auth/resend-verification` | Resend activation email |
+| POST | `/api.php/auth/admin-verify` | Manually verify a user email (requires admin key) |
+| POST | `/api.php/auth/login` | Login only after email is verified |
+
+### Manual verification page
+
+Open `/admin-verify.html` in your browser when mail delivery is unavailable.
+Provide target email + `ADMIN_VERIFY_KEY` to mark account as verified.
 
 ## Example API Usage
 

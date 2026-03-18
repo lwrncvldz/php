@@ -8,8 +8,18 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
+    email_verified TINYINT(1) DEFAULT 0,
+    verification_token VARCHAR(64) NULL,
+    verification_expires_at DATETIME NULL,
+    verified_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add verification columns for existing databases
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified TINYINT(1) DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token VARCHAR(64) NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_expires_at DATETIME NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verified_at DATETIME NULL;
 
 -- Create Expenses Table
 CREATE TABLE IF NOT EXISTS expenses (
@@ -73,8 +83,8 @@ CREATE TABLE IF NOT EXISTS alerts (
 );
 
 -- Insert sample user
-INSERT INTO users (name, email, password) VALUES 
-('Demo User', 'demo@example.com', '$2y$10$YlhTOWEvUOy1w7sOe0v5CO3D3V2dkKh4trmCPfPPOHQQfXMh4Aee6')
+INSERT INTO users (name, email, password, email_verified, verified_at) VALUES 
+('Demo User', 'demo@example.com', '$2y$10$YlhTOWEvUOy1w7sOe0v5CO3D3V2dkKh4trmCPfPPOHQQfXMh4Aee6', 1, NOW())
 ON DUPLICATE KEY UPDATE id=id;
 
 -- Insert sample expenses

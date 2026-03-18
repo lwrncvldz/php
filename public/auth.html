@@ -337,6 +337,7 @@
             </div>
 
             <div id="login-msg" class="msg"></div>
+            <button id="resend-verification-btn" class="btn-submit" style="display:none; margin-bottom: 12px;" onclick="resendVerification()">Resend Activation Email</button>
 
             <div class="form-group">
                 <label for="login-email">Email</label>
@@ -401,6 +402,8 @@
 </div>
 
 <script>
+    let pendingVerificationEmail = '';
+
     // ── Auto-redirect if already logged in ──────────────────────────────────
     (async function checkSession() {
         try {
@@ -410,6 +413,38 @@
                 window.location.replace('index.html');
             }
         } catch(e) {}
+    })();
+
+    // ── Handle email activation token from mail link ────────────────────────
+    (async function handleVerificationFromLink() {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('verify_token');
+        if (!token) return;
+
+        const msg = document.getElementById('login-msg');
+        msg.textContent = 'Verifying your email...';
+        msg.className = 'msg success';
+        showTab('login');
+
+        try {
+            const res = await fetch('api.php/auth/verify?token=' + encodeURIComponent(token));
+            const data = await res.json();
+
+            if (data.success) {
+                msg.textContent = data.message || 'Email verified. You can now sign in.';
+                msg.className = 'msg success';
+            } else {
+                msg.textContent = data.message || 'Verification link is invalid or expired.';
+                msg.className = 'msg error';
+            }
+        } catch (e) {
+            msg.textContent = 'Could not verify email right now. Please try again.';
+            msg.className = 'msg error';
+        }
+
+        params.delete('verify_token');
+        const cleanUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+        window.history.replaceState({}, '', cleanUrl);
     })();
 
     // ── Tab switching ───────────────────────────────────────────────────────
@@ -426,8 +461,10 @@
         const password = document.getElementById('login-password').value;
         const btn = document.getElementById('login-btn');
         const msg = document.getElementById('login-msg');
+        const resendBtn = document.getElementById('resend-verification-btn');
 
         msg.className = 'msg';
+        resendBtn.style.display = 'none';
 
         if (!email || !password) {
             msg.textContent = 'Please enter your email and password.';
@@ -453,6 +490,12 @@
             } else {
                 msg.textContent = data.message || 'Invalid email or password.';
                 msg.className = 'msg error';
+
+                if (data.requires_verification) {
+                    pendingVerificationEmail = email;
+                    resendBtn.style.display = 'block';
+                }
+
                 btn.disabled = false;
                 btn.innerHTML = 'Sign In';
             }
@@ -500,15 +543,24 @@
             const data = await res.json();
 
             if (data.success) {
-                // Auto-login after register
-                const loginRes = await fetch('api.php/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                msg.textContent = '✅ Account created! Redirecting…';
+                msg.textContent = data.message || '✅ Account created. Please check your email and activate your account before signing in.';
                 msg.className = 'msg success';
-                setTimeout(() => window.location.replace('index.html'), 700);
+                pendingVerificationEmail = email;
+                document.getElementById('login-email').value = email;
+                document.getElementById('login-password').value = '';
+                showTab('login');
+
+                const loginMsg = document.getElementById('login-msg');
+                loginMsg.textContent = data.message || 'Account created. Check your email for the activation link.';
+                loginMsg.className = 'msg success';
+
+                if (!data.emailSent && data.verificationLink) {
+                    loginMsg.textContent = loginMsg.textContent + ' Mail is not configured yet. Use this temporary activation link: ' + data.verificationLink;
+                }
+
+                document.getElementById('resend-verification-btn').style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = 'Create Account';
             } else {
                 msg.textContent = data.message || 'Registration failed. Email may already exist.';
                 msg.className = 'msg error';
@@ -520,6 +572,48 @@
             msg.className = 'msg error';
             btn.disabled = false;
             btn.innerHTML = 'Create Account';
+        }
+    }
+
+    async function resendVerification() {
+        const msg = document.getElementById('login-msg');
+        const resendBtn = document.getElementById('resend-verification-btn');
+        const emailInput = document.getElementById('login-email').value.trim();
+        const email = pendingVerificationEmail || emailInput;
+
+        if (!email) {
+            msg.textContent = 'Enter your email first, then click resend.';
+            msg.className = 'msg error';
+            return;
+        }
+
+        resendBtn.disabled = true;
+        resendBtn.innerHTML = '<span class="spinner"></span>Sending activation email...';
+
+        try {
+            const res = await fetch('api.php/auth/resend-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                msg.textContent = data.message || 'Activation email sent. Please check your inbox.';
+                msg.className = 'msg success';
+            } else {
+                msg.textContent = data.message || 'Could not resend activation email.';
+                if (data.verificationLink) {
+                    msg.textContent = msg.textContent + ' Temporary activation link: ' + data.verificationLink;
+                }
+                msg.className = 'msg error';
+            }
+        } catch (e) {
+            msg.textContent = 'Connection error while sending activation email.';
+            msg.className = 'msg error';
+        } finally {
+            resendBtn.disabled = false;
+            resendBtn.innerHTML = 'Resend Activation Email';
         }
     }
 
