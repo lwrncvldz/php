@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Page</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        #message { margin-top: 20px; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <h1>Expense Tracker - Test</h1>
+    <button onclick="testClick()">Click Me</button>
+    <button onclick="testAPI()">Test API</button>
+    <div id="message"></div>
+
+    <script>
+        function testClick() {
+            document.getElementById('message').innerHTML = 'Button clicked!';
+        }
+
+        async function testAPI() {
+            try {
+                const response = await fetch('/api.php/expenses');
+                const data = await response.json();
+                document.getElementById('message').innerHTML = 'API Response: ' + JSON.stringify(data).substring(0, 100);
+            } catch (e) {
+                document.getElementById('message').innerHTML = 'Error: ' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>

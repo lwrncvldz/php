@@ -1,0 +1,20 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Allow direct file/folder access
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    
+    # Route API requests to api.php with PATH_INFO preserved
+    RewriteRule ^api\.php/(.*)$ api.php/$1 [QSA,L]
+    
+    # Everything else goes to index-advanced.html
+    RewriteRule ^(?!api\.php)[\w\-/]*\.html$ - [L]
+    RewriteRule ^(?!api\.php).*$ index-advanced.html [QSA,L]
+</IfModule>
+
+# Enable PHP error reporting (remove in production)
+php_flag display_errors on
+php_value error_reporting E_ALL
