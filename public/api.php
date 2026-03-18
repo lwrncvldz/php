@@ -32,7 +32,7 @@ try {
             } elseif ($action === 'login' && $request_method === 'POST') {
                 $controller->login();
             } elseif ($action === 'verify' && $request_method === 'GET') {
-                $controller->verifyEmail();
+                $controller->verify();
             } elseif ($action === 'resend-verification' && $request_method === 'POST') {
                 $controller->resendVerification();
             } elseif ($action === 'admin-verify' && $request_method === 'POST') {

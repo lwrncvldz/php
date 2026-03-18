@@ -17,8 +17,8 @@ class UserController {
     public function register() {
         $data = json_decode(file_get_contents("php://input"), true);
         
-        $this->userModel->name = $data['name'] ?? '';
-        $this->userModel->email = $data['email'] ?? '';
+        $this->userModel->name = trim($data['name'] ?? '');
+        $this->userModel->email = trim($data['email'] ?? '');
         $this->userModel->password = $data['password'] ?? '';
 
         if (!$this->userModel->name || !$this->userModel->email || !$this->userModel->password) {
@@ -28,7 +28,7 @@ class UserController {
         $result = $this->userModel->register();
 
         if (!$result['success']) {
-            return $this->response($result, 400);
+            return $this->response(['success' => false, 'message' => $result['message'] ?? 'Registration failed'], 400);
         }
 
         $mailResult = $this->mailer->sendVerificationEmail(
@@ -39,13 +39,14 @@ class UserController {
 
         $response = [
             'success' => true,
-            'message' => 'Account created. Please check your email and activate your account before logging in.',
+            'message' => 'Account created! Please check your email to activate your account.',
             'emailSent' => $mailResult['success']
         ];
 
         if (!$mailResult['success']) {
-            $response['message'] = 'Account created, but verification email could not be sent. Please configure mail and request a new activation link.';
-            $response['verificationLink'] = $mailResult['activation_link'];
+            $response['message'] = 'Account created, but verification email failed. Please check mail config.';
+            $response['mailError'] = $mailResult['message'] ?? 'Unknown error';
+            $response['verificationLink'] = $mailResult['activation_link'] ?? '';
         }
 
         return $this->response($response, 201);
@@ -61,7 +62,7 @@ class UserController {
         $result = $this->userModel->login();
 
         if (isset($result['requires_verification']) && $result['requires_verification']) {
-            return $this->response($result, 403);
+            return $this->response(['success' => false, 'message' => 'Please verify your email before signing in. Check your inbox.'], 403);
         }
         
         if ($result['success']) {
@@ -76,15 +77,20 @@ class UserController {
         return $this->response($result, 401);
     }
 
-    public function verifyEmail() {
+    public function verify() {
         $token = $_GET['token'] ?? '';
+        
+        if (!$token) {
+            return $this->response(['success' => false, 'message' => 'No token provided'], 400);
+        }
+
         $result = $this->userModel->verifyEmail($token);
 
         if ($result['success']) {
-            return $this->response($result, 200);
+            return $this->response(['success' => true, 'message' => 'Email verified successfully!']);
         }
 
-        return $this->response($result, 400);
+        return $this->response(['success' => false, 'message' => $result['message'] ?? 'Invalid or expired token.'], 400);
     }
 
     public function resendVerification() {

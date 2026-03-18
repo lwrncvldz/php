@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Email — Expense Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --bg: #f5f5f7;
+            --surface: #ffffff;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --radius-md: 16px;
+            --shadow-md: 0 4px 24px rgba(0,0,0,0.08);
+            --transition: all 0.2s ease;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 400px;
+            padding: 40px 32px;
+            text-align: center;
+        }
+
+        .icon {
+            width: 64px; height: 64px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center; justify-content: center;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .icon.loading { background: #eef2ff; color: var(--accent); animation: pulse 1.5s infinite; }
+        .icon.success { background: #d1fae5; color: var(--success); }
+        .icon.error { background: #fee2e2; color: var(--danger); }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79,70,229,0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(79,70,229,0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79,70,229,0); }
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0 0 8px;
+            letter-spacing: -0.4px;
+        }
+
+        p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0 0 24px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 12px 24px;
+            background: var(--accent);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        .btn.outline { background: transparent; color: var(--text-primary); border: 1.5px solid var(--border); }
+        .btn.outline:hover { background: var(--bg); border-color: #d1d5db; }
+    </style>
+</head>
+<body>
+
+<div class="card" id="card">
+    <div class="icon loading" id="icon">🔄</div>
+    <h1 id="title">Verifying your email…</h1>
+    <p id="message">Please wait a moment while we confirm your link.</p>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    const ui = {
+        icon: document.getElementById('icon'),
+        title: document.getElementById('title'),
+        message: document.getElementById('message'),
+        card: document.getElementById('card')
+    };
+
+    function showStatus(type, title, message, buttonText, buttonLink, isOutline = false) {
+        ui.icon.className = `icon ${type}`;
+        ui.icon.textContent = type === 'success' ? '✅' : '❌';
+        ui.title.textContent = title;
+        ui.message.textContent = message;
+        
+        const btnClass = isOutline ? 'btn outline' : 'btn';
+        ui.card.innerHTML += `<a href="${buttonLink}" class="${btnClass}">${buttonText}</a>`;
+    }
+
+    if (!token) {
+        showStatus('error', 'Invalid Link', 'No verification token was provided. Please check the link in your email.', 'Back to Sign In', 'auth.html', true);
+    } else {
+        fetch(`api.php/auth/verify?token=${encodeURIComponent(token)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus('success', 'Email Verified!', 'Your account is now active. You can sign in to start tracking your expenses.', 'Sign In', 'auth.html');
+                } else {
+                    showStatus('error', 'Verification Failed', data.message || 'The link is invalid or has expired.', 'Back to Sign In', 'auth.html', true);
+                }
+            })
+            .catch(err => {
+                showStatus('error', 'Connection Error', 'We could not reach the server. Please try again later.', 'Try Again', window.location.href);
+            });
+    }
+</script>
+</body>
+</html>
