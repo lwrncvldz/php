@@ -604,6 +604,7 @@
     <div class="topbar-right">
         <div id="currency-badge" class="topbar-currency" style="display:none"></div>
         <span id="topbar-username" class="topbar-user"></span>
+        <a href="admin.html" class="btn-logout" id="admin-link" style="display: none;">Admin Panel</a>
         <button class="btn-logout" id="logout-btn" onclick="doLogout()">Sign Out</button>
     </div>
 </nav>
@@ -836,6 +837,11 @@
             if (!data.success) {
                 window.location.replace('auth.html');
                 return null;
+            }
+            
+            // Show Admin Panel link if user is an admin
+            if (data.user.role === 'admin') {
+                document.getElementById('admin-link').style.display = 'flex';
             }
             return data.user;
         } catch(e) {

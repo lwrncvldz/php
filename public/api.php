@@ -11,6 +11,7 @@ require_once dirname(__FILE__) . '/../app/Controllers/BudgetController.php';
 require_once dirname(__FILE__) . '/../app/Controllers/RecurringExpenseController.php';
 require_once dirname(__FILE__) . '/../app/Controllers/AlertController.php';
 require_once dirname(__FILE__) . '/../app/Controllers/AnalyticsController.php';
+require_once dirname(__FILE__) . '/../app/Controllers/AdminController.php';
 
 $database = new Database();
 $db = $database->connect();
@@ -43,6 +44,18 @@ try {
                 $controller->getCurrentUser();
             } elseif ($action === 'profile' && $request_method === 'PUT') {
                 $controller->updateProfile();
+            }
+            break;
+
+        // Admin functionality
+        case 'admin':
+            $controller = new AdminController($db);
+            if ($action === 'stats' && $request_method === 'GET') {
+                $controller->getDashboardStats();
+            } elseif ($action === 'users' && $request_method === 'GET') {
+                $controller->getAllUsers();
+            } elseif ($action === 'users' && $request_method === 'DELETE' && $id) {
+                $controller->deleteUser($id);
             }
             break;
 

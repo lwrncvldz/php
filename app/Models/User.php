@@ -204,7 +204,7 @@ class User {
 
     // Get user by ID
     public function getById($id) {
-        $query = "SELECT id, name, email, email_verified, created_at FROM " . $this->table . " WHERE id = :id LIMIT 1";
+        $query = "SELECT id, name, email, role, email_verified, created_at FROM " . $this->table . " WHERE id = :id LIMIT 1";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':id', $id);
         $stmt->execute();

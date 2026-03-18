@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — Expense Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Using Feather Icons since the main app uses it -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        :root {
+            --bg: #f5f5f7;
+            --surface: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border: #e5e7eb;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --danger: #ef4444;
+            --success: #10b981;
+            --radius-lg: 20px;
+            --radius-md: 12px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            margin: 0; padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .topbar {
+            background: var(--surface);
+            padding: 16px 32px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo { font-size: 20px; font-weight: 700; color: var(--accent); text-decoration: none; }
+        
+        .nav-links { display: flex; gap: 24px; align-items: center; }
+        .nav-links a { 
+            color: var(--text-secondary); text-decoration: none; font-weight: 500; font-size: 14px;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--text-primary); }
+        .nav-links a.active { color: var(--accent); }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 32px;
+        }
+
+        .header {
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 28px; font-weight: 700; margin: 0 0 8px 0;
+        }
+        .header p { color: var(--text-secondary); margin: 0; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+        }
+
+        .stat-label { font-size: 13px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-value { font-size: 32px; font-weight: 700; color: var(--text-primary); margin-top: 8px; }
+
+        .table-container {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%; border-collapse: collapse; text-align: left;
+        }
+
+        th {
+            background: #f9fafb;
+            padding: 16px 24px;
+            font-size: 13px; font-weight: 600; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        .badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+        }
+        .badge.admin { background: #eef2ff; color: var(--accent); }
+        .badge.user { background: #f3f4f6; color: var(--text-secondary); }
+        .badge.verified { background: #d1fae5; color: var(--success); }
+        .badge.unverified { background: #fee2e2; color: var(--danger); }
+
+        .action-btn {
+            background: transparent; color: var(--text-secondary);
+            border: none; cursor: pointer; padding: 6px; border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .action-btn:hover { background: #fee2e2; color: var(--danger); }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .user-name { font-weight: 600; color: var(--text-primary); }
+        .user-email { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+
+        #error-banner {
+            background: #fee2e2; color: var(--danger);
+            padding: 16px; border-radius: var(--radius-md);
+            margin-bottom: 24px; font-weight: 500; text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="topbar">
+        <a href="index.html" class="logo">Expense Tracker</a>
+        <div class="nav-links">
+            <a href="index.html">Dashboard</a>
+            <a href="admin.html" class="active">Admin Panel</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="error-banner"></div>
+
+        <div class="header">
+            <h1>Platform Administration</h1>
+            <p>Overview of all users, expenses, and platform activity.</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value" id="stat-total-users">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Verified Users</div>
+                <div class="stat-value" id="stat-verified-users">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Cash Logged</div>
+                <div class="stat-value" id="stat-total-money">--</div>
+            </div>
+        </div>
+
+        <div class="header">
+            <h2 style="font-size: 20px; margin:0;">User Management</h2>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                        <th>Expenses</th>
+                        <th>Total Logged</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table">
+                    <tr><td colspan="7" style="text-align:center; color: var(--text-secondary);">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Check Admin Status and Load Data
+        async function loadAdminData() {
+            try {
+                // Fetch stats
+                const statsRes = await fetch('api.php/admin/stats');
+                if (statsRes.status === 403) {
+                    window.location.href = 'index.html'; // Redirect if not admin
+                    return;
+                }
+                const statsData = await statsRes.json();
+
+                if (statsData.success) {
+                    document.getElementById('stat-total-users').textContent = statsData.stats.totalUsers;
+                    document.getElementById('stat-verified-users').textContent = statsData.stats.verifiedUsers;
+                    document.getElementById('stat-total-money').textContent = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(statsData.stats.totalExpenses);
+                }
+
+                // Fetch Users
+                const usersRes = await fetch('api.php/admin/users');
+                const usersData = await usersRes.json();
+                
+                if (usersData.success) {
+                    renderUsersTable(usersData.users);
+                }
+            } catch (err) {
+                showError('Failed to connect to the server.');
+            }
+        }
+
+        function renderUsersTable(users) {
+            const tbody = document.getElementById('users-table');
+            tbody.innerHTML = '';
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No users found.</td></tr>';
+                return;
+            }
+
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                const date = new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const roleBadge = u.role === 'admin' ? '<span class="badge admin">Admin</span>' : '<span class="badge user">User</span>';
+                const statusBadge = parseInt(u.email_verified) === 1 ? '<span class="badge verified">Verified</span>' : '<span class="badge unverified">Pending</span>';
+                const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(u.total_spent);
+                const isSuperAdmin = u.role === 'admin';
+
+                tr.innerHTML = `
+                    <td>
+                        <div class="user-name">${escapeHTML(u.name)}</div>
+                        <div class="user-email">${escapeHTML(u.email)}</div>
+                    </td>
+                    <td>${roleBadge}</td>
+                    <td>${statusBadge}</td>
+                    <td>${date}</td>
+                    <td>${u.expense_count} items</td>
+                    <td style="font-weight:600">${money}</td>
+                    <td>
+                        <button class="action-btn" onclick="deleteUser(${u.id})" ${isSuperAdmin ? 'disabled title="Cannot delete admins"' : 'title="Delete User"'}><i data-feather="trash-2"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            feather.replace();
+        }
+
+        async function deleteUser(id) {
+            if (!confirm('Are you absolutely sure? This will delete the user and all their expenses permanently.')) return;
+            
+            try {
+                const res = await fetch(`api.php/admin/users/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                
+                if (data.success) {
+                    loadAdminData(); // Refresh list
+                } else {
+                    showError(data.message);
+                }
+            } catch (e) {
+                showError('Failed to delete user.');
+            }
+        }
+
+        function showError(msg) {
+            const b = document.getElementById('error-banner');
+            b.textContent = msg;
+            b.style.display = 'block';
+            setTimeout(() => b.style.display = 'none', 5000);
+        }
+
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Initialize
+        loadAdminData();
+    </script>
+</body>
+</html>

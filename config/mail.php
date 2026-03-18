@@ -21,13 +21,13 @@ return [
     'encryption' => 'ssl', // Try 'tls' if using port 587
     
     // Your Gmail Address
-    'username' => 'your_email@gmail.com',
+    'username' => 'lawrencedump57@gmail.com',
     
     // Your Gmail App Password (16 characters, no spaces)
     // IMPORTANT: Generate this from Google Account -> Security -> App Passwords
-    'password' => 'your_16_char_app_password',
+    'password' => '5393183708243782',
     
     // The "From" address and name that recipients will see
-    'from_email' => 'your_email@gmail.com',
+    'from_email' => 'lawrencedump57@gmail.com',
     'from_name' => 'Expense Tracker'
 ];

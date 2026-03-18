@@ -69,6 +69,7 @@ class UserController {
             $_SESSION['user_id'] = $result['user']['id'];
             $_SESSION['user_name'] = $result['user']['name'];
             $_SESSION['user_email'] = $result['user']['email'];
+            $_SESSION['user_role'] = $result['user']['role'];
             
             unset($result['user']['password']);
             return $this->response(['success' => true, 'user' => $result['user']]);
