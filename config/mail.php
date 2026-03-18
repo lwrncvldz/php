@@ -9,7 +9,7 @@
 
 return [
     // Leave this as true to enable PHPMailer SMTP sending
-    'enabled' => true,
+    'enabled' => false,
     
     // SMTP Host (Gmail)
     'host' => 'smtp.gmail.com',

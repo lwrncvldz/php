@@ -1,10 +1,14 @@
 <?php
 
 class Database {
-    private $host = 'localhost';
-    private $dbName = 'expense_tracker';
-    private $dbUser = 'root';
-    private $dbPassword = '';
+    // ==========================================
+    // DEPLOYMENT SETTINGS
+    // Change these to your live database details properly provided by your host (cPanel, Hostinger, etc.)
+    // ==========================================
+    private $host = 'localhost';          // Usually 'localhost', but sometimes an IP or URL
+    private $dbName = 'expense_tracker';  // Your live database name
+    private $dbUser = 'root';             // Your live database username
+    private $dbPassword = '';             // Your live database password
     private $connection;
 
     public function connect() {
